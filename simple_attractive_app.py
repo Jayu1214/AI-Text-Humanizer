@@ -801,25 +801,81 @@ if st.session_state.result:
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        # Modern copy solution for web deployment
+        # One-click automatic copy functionality
         if st.button("📋 Copy Result", use_container_width=True):
             if st.session_state.result:
-                # Display the text in a code block for easy selection
-                st.markdown("**📋 Your humanized text (click to select all):**")
-                st.code(st.session_state.result, language=None)
+                # Create a unique identifier
+                copy_id = f"copy_{hash(st.session_state.result) % 10000}"
                 
-                # Instructions for copying
-                st.info("💡 **How to copy:** Click in the text box above, then press **Ctrl+A** (Select All) and **Ctrl+C** (Copy)")
+                # Clean the text for JavaScript
+                clean_text = st.session_state.result.replace('\\', '\\\\').replace('`', '\\`').replace('"', '\\"')
                 
-                # Add some styling for better UX
-                st.markdown("""
-                <style>
-                .stCode > div {
-                    background-color: #f0f2f6 !important;
-                    border: 2px dashed #667eea !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
+                # Inject JavaScript for instant copying
+                st.components.v1.html(f"""
+                <script>
+                    async function copyText() {{
+                        const text = `{clean_text}`;
+                        try {{
+                            // Modern browsers
+                            await navigator.clipboard.writeText(text);
+                            showSuccess();
+                        }} catch (err) {{
+                            // Fallback for older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = text;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            showSuccess();
+                        }}
+                    }}
+                    
+                    function showSuccess() {{
+                        // Create success notification
+                        const notification = document.createElement('div');
+                        notification.innerHTML = '✅ Text copied to clipboard!';
+                        notification.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: linear-gradient(90deg, #4CAF50, #45a049);
+                            color: white;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+                            z-index: 10000;
+                            font-family: 'Inter', sans-serif;
+                            font-weight: 600;
+                            font-size: 14px;
+                            animation: slideIn 0.3s ease-out;
+                        `;
+                        
+                        document.body.appendChild(notification);
+                        setTimeout(() => {{
+                            notification.style.animation = 'slideOut 0.3s ease-in';
+                            setTimeout(() => notification.remove(), 300);
+                        }}, 2000);
+                    }}
+                    
+                    // Add CSS animations
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @keyframes slideIn {{
+                            from {{ transform: translateX(100%); opacity: 0; }}
+                            to {{ transform: translateX(0); opacity: 1; }}
+                        }}
+                        @keyframes slideOut {{
+                            from {{ transform: translateX(0); opacity: 1; }}
+                            to {{ transform: translateX(100%); opacity: 0; }}
+                        }}
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // Execute copy immediately
+                    copyText();
+                </script>
+                """, height=0)
                 
             else:
                 st.warning("⚠️ No text to copy yet! Please humanize some text first.")

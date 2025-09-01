@@ -15,6 +15,7 @@ def ensure_nltk_data():
     """Ensure all required NLTK data is downloaded"""
     required_downloads = [
         ('tokenizers/punkt', 'punkt'),
+        ('tokenizers/punkt_tab', 'punkt_tab'),  # New punkt tokenizer
         ('corpora/wordnet', 'wordnet'),
         ('corpora/omw-1.4', 'omw-1.4')
     ]
@@ -23,8 +24,17 @@ def ensure_nltk_data():
         try:
             nltk.data.find(data_path)
         except LookupError:
-            print(f"Downloading {download_name}...")
-            nltk.download(download_name, quiet=True)
+            try:
+                print(f"Downloading {download_name}...")
+                nltk.download(download_name, quiet=True)
+            except Exception as e:
+                print(f"Failed to download {download_name}: {e}")
+                # Try alternative if punkt_tab fails
+                if download_name == 'punkt_tab':
+                    try:
+                        nltk.download('punkt', quiet=True)
+                    except:
+                        pass
 
 # Ensure NLTK data is available
 ensure_nltk_data()
@@ -210,7 +220,13 @@ class AdvancedHumanizer:
             text = re.sub(pattern, casual, text, flags=re.IGNORECASE)
         
         # Step 2: Break up AI sentence patterns
-        sentences = nltk.sent_tokenize(text)
+        try:
+            sentences = nltk.sent_tokenize(text)
+        except Exception as e:
+            # Fallback: simple sentence splitting
+            print(f"NLTK tokenization failed, using fallback: {e}")
+            sentences = self._fallback_sentence_split(text)
+        
         humanized_sentences = []
         
         for i, sentence in enumerate(sentences):
@@ -327,6 +343,15 @@ class AdvancedHumanizer:
                 text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
         
         return text
+    
+    def _fallback_sentence_split(self, text):
+        """Fallback sentence splitting when NLTK fails"""
+        # Simple regex-based sentence splitting
+        import re
+        sentences = re.split(r'[.!?]+\s+', text)
+        # Clean up and filter
+        sentences = [s.strip() for s in sentences if s.strip()]
+        return sentences
     
     def humanize(self, text):
         """Main humanization method"""

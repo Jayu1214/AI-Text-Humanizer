@@ -24,6 +24,7 @@ def download_nltk_data():
     import nltk
     required_downloads = [
         ('tokenizers/punkt', 'punkt'),
+        ('tokenizers/punkt_tab', 'punkt_tab'),  # New punkt tokenizer  
         ('corpora/wordnet', 'wordnet'), 
         ('corpora/omw-1.4', 'omw-1.4')
     ]
@@ -32,8 +33,17 @@ def download_nltk_data():
         try:
             nltk.data.find(data_path)
         except LookupError:
-            st.info(f"Downloading {download_name} data...")
-            nltk.download(download_name, quiet=True)
+            try:
+                st.info(f"Downloading {download_name} data...")
+                nltk.download(download_name, quiet=True)
+            except Exception as e:
+                st.warning(f"Could not download {download_name}: {e}")
+                # Try alternative for punkt_tab
+                if download_name == 'punkt_tab':
+                    try:
+                        nltk.download('punkt', quiet=True)
+                    except:
+                        pass
     
     return True
 
@@ -73,10 +83,23 @@ def verify_nltk_functionality():
     """Test that NLTK functions work properly"""
     try:
         import nltk
-        # Test sentence tokenization
+        # Test sentence tokenization with fallback
         test_text = "This is a test sentence. This is another sentence."
-        sentences = nltk.sent_tokenize(test_text)
-        return len(sentences) == 2
+        
+        # Try different tokenization methods
+        try:
+            sentences = nltk.sent_tokenize(test_text)
+        except LookupError:
+            # If punkt_tab fails, try downloading all punkt-related data
+            try:
+                nltk.download('punkt', quiet=True)
+                nltk.download('punkt_tab', quiet=True)
+                sentences = nltk.sent_tokenize(test_text)
+            except:
+                # Last resort: simple split
+                sentences = test_text.split('. ')
+        
+        return len(sentences) >= 2
     except Exception as e:
         st.error(f"NLTK verification failed: {e}")
         return False

@@ -20,23 +20,25 @@ st.set_page_config(
 # Download required NLTK data (for deployment)
 @st.cache_data
 def download_nltk_data():
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt', quiet=True)
+    """Download and verify NLTK data availability"""
+    import nltk
+    required_downloads = [
+        ('tokenizers/punkt', 'punkt'),
+        ('corpora/wordnet', 'wordnet'), 
+        ('corpora/omw-1.4', 'omw-1.4')
+    ]
     
-    try:
-        nltk.data.find('corpora/wordnet')
-    except LookupError:
-        nltk.download('wordnet', quiet=True)
+    for data_path, download_name in required_downloads:
+        try:
+            nltk.data.find(data_path)
+        except LookupError:
+            st.info(f"Downloading {download_name} data...")
+            nltk.download(download_name, quiet=True)
     
-    try:
-        nltk.data.find('corpora/omw-1.4')
-    except LookupError:
-        nltk.download('omw-1.4', quiet=True)
+    return True
 
-# Initialize NLTK data
-download_nltk_data()
+# Initialize NLTK data first
+nltk_ready = download_nltk_data()
 
 # Add current directory to path
 sys.path.append(os.getcwd())
@@ -49,7 +51,11 @@ if 'result' not in st.session_state:
 if 'copy_success' not in st.session_state:
     st.session_state.copy_success = False
 if 'humanizer' not in st.session_state:
-    st.session_state.humanizer = AdvancedHumanizer()
+    try:
+        st.session_state.humanizer = AdvancedHumanizer()
+    except Exception as e:
+        st.error(f"Error initializing humanizer: {e}")
+        st.stop()
 if 'processing' not in st.session_state:
     st.session_state.processing = False
 if 'history' not in st.session_state:
@@ -60,6 +66,25 @@ if 'transformation_mode' not in st.session_state:
     st.session_state.transformation_mode = "Advanced"
 if 'real_time_enabled' not in st.session_state:
     st.session_state.real_time_enabled = False
+
+# Verify NLTK is working
+@st.cache_data  
+def verify_nltk_functionality():
+    """Test that NLTK functions work properly"""
+    try:
+        import nltk
+        # Test sentence tokenization
+        test_text = "This is a test sentence. This is another sentence."
+        sentences = nltk.sent_tokenize(test_text)
+        return len(sentences) == 2
+    except Exception as e:
+        st.error(f"NLTK verification failed: {e}")
+        return False
+
+# Run verification
+if not verify_nltk_functionality():
+    st.error("⚠️ NLTK initialization failed. Please refresh the page.")
+    st.stop()
 
 # Clean and attractive CSS
 st.markdown("""
@@ -581,7 +606,12 @@ if process_button:
             time.sleep(0.3)
         
         # Process the text with advanced settings
-        result = st.session_state.humanizer.humanize(input_text)
+        try:
+            result = st.session_state.humanizer.humanize(input_text)
+        except Exception as e:
+            st.error(f"Error processing text: {e}")
+            st.error("Please try refreshing the page or contact support.")
+            st.stop()
         st.session_state.result = result
         st.session_state.original_text = input_text
         

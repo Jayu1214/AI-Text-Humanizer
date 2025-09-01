@@ -10,18 +10,29 @@ import nltk
 from collections import defaultdict
 import string
 
+# Global NLTK data download function
+def ensure_nltk_data():
+    """Ensure all required NLTK data is downloaded"""
+    required_downloads = [
+        ('tokenizers/punkt', 'punkt'),
+        ('corpora/wordnet', 'wordnet'),
+        ('corpora/omw-1.4', 'omw-1.4')
+    ]
+    
+    for data_path, download_name in required_downloads:
+        try:
+            nltk.data.find(data_path)
+        except LookupError:
+            print(f"Downloading {download_name}...")
+            nltk.download(download_name, quiet=True)
+
+# Ensure NLTK data is available
+ensure_nltk_data()
+
 class AdvancedHumanizer:
     def __init__(self):
-        # Download required NLTK data
-        try:
-            nltk.data.find('tokenizers/punkt')
-        except LookupError:
-            nltk.download('punkt', quiet=True)
-        
-        try:
-            nltk.data.find('corpora/wordnet')
-        except LookupError:
-            nltk.download('wordnet', quiet=True)
+        # Ensure NLTK data is available when class is initialized
+        ensure_nltk_data()
             
         # Aggressive word replacements - AI to Human
         self.aggressive_replacements = {

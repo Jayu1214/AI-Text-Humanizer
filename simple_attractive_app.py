@@ -8,6 +8,7 @@ import json
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
+import nltk
 
 st.set_page_config(
     page_title=" AI Text Humanizer Pro",
@@ -15,6 +16,27 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Download required NLTK data (for deployment)
+@st.cache_data
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt', quiet=True)
+    
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        nltk.download('wordnet', quiet=True)
+    
+    try:
+        nltk.data.find('corpora/omw-1.4')
+    except LookupError:
+        nltk.download('omw-1.4', quiet=True)
+
+# Initialize NLTK data
+download_nltk_data()
 
 # Add current directory to path
 sys.path.append(os.getcwd())

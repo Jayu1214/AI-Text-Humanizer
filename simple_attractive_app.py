@@ -1,7 +1,6 @@
 import streamlit as st
 import sys
 import os
-import pyperclip
 import time
 import random
 import json
@@ -802,12 +801,28 @@ if st.session_state.result:
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
+        # Modern copy solution for web deployment
         if st.button("📋 Copy Result", use_container_width=True):
-            try:
-                pyperclip.copy(st.session_state.result)
-                st.markdown('<div class="success-notification">✅ Copied to clipboard!</div>', unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"❌ Copy failed: {e}")
+            if st.session_state.result:
+                # Display the text in a code block for easy selection
+                st.markdown("**📋 Your humanized text (click to select all):**")
+                st.code(st.session_state.result, language=None)
+                
+                # Instructions for copying
+                st.info("💡 **How to copy:** Click in the text box above, then press **Ctrl+A** (Select All) and **Ctrl+C** (Copy)")
+                
+                # Add some styling for better UX
+                st.markdown("""
+                <style>
+                .stCode > div {
+                    background-color: #f0f2f6 !important;
+                    border: 2px dashed #667eea !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+            else:
+                st.warning("⚠️ No text to copy yet! Please humanize some text first.")
     
     with col2:
         # Enhanced download with metadata
